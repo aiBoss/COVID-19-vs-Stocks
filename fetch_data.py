@@ -1,8 +1,10 @@
 import pandas as pd
 import yfinance as yf
 import datetime as dt
+from multiprocessing import Pool
 
 
+#list of S&P 500 Index Stock Tickers
 ticker = [	'MMM','ABT','ABBV','ABMD','ACN','ATVI','ADBE','AMD','AAP','AES','AFL','A','APD','AKAM','ALK','ALB','ARE','ALXN','ALGN','ALLE',
 			'AGN','ADS','LNT','ALL','GOOGL','GOOG','MO','AMZN','AMCR','AEE','AAL','AEP','AXP','AIG','AMT','AWK','AMP','ABC','AME',
 			'AMGN','APH','ADI','ANSS','ANTM','AON','AOS','APA','AIV','AAPL','AMAT','APTV','ADM','ANET','AJG','AIZ','T','ATO','ADSK',
@@ -27,26 +29,33 @@ ticker = [	'MMM','ABT','ABBV','ABMD','ACN','ATVI','ADBE','AMD','AAP','AES','AFL'
 			'STE','SYK','SIVB','SYF','SNPS','SYY','TMUS','TROW','TTWO','TPR','TGT','TEL','FTI','TFX','TXN','TXT','TMO','TIF','TJX','TSCO',
 			'TT','TDG','TRV','TFC','TWTR','TSN','UDR','ULTA','USB','UAA','UA','UNP','UAL','UNH','UPS','URI','UHS','UNM','VFC','VLO','VAR',
 			'VTR','VRSN','VRSK','VZ','VRTX','VIAC','V','VNO','VMC','WRB','WAB','WMT','WBA','DIS','WM','WAT','WEC','WFC','WELL','WDC','WU',
-			'WRK','WY','WHR','WMB','WLTW','WYNN','XEL','XRX','XLNX','XYL','YUM','ZBRA','ZBH','ZION','ZTS', '^GSPC']
+			'WRK','WY','WHR','WMB','WLTW','WYNN','XEL','XRX','XLNX','XYL','YUM','ZBRA','ZBH','ZION','ZTS','^GSPC']
 
+#Function to get stock info
+def get_info(i):
+	inf = yf.Ticker(ticker[i])
+	return inf.info
 
+#Downloading stock prices till date since 1st Jan 2018 and saving them to csv
 end_date = str(dt.date.today())
 df = yf.download(ticker,start='2017-12-31',end=end_date,progress=True)
 df.to_csv("//Users//mkr4014//Desktop//spark_dataset//raw_data.csv")
+print("raw_data file created")
+
+#dictionary for stock info
 stock_info = {}
-for i in range(len(ticker)):
-	count = count+1
-	inf = yf.Ticker(ticker[i])
-	stock_info[ticker[i]]=inf.info
+
+#Creating multiple processes for Parallel Downloading of stock info
+p = Pool(100)
+
+#getting stock info as list
+info_list = p.map(get_info,[i for i in range(len(ticker))])
+print("Finished getting info")
+print("adding to dict")
+for i in range(len(info_list)):
+	stock_info[ticker[i]] = info_list[i]
+
+#Saving stock info to csv
 df = pd.DataFrame.from_records(stock_info)
 df.to_csv("//Users//mkr4014//Desktop//spark_dataset//stock_info.csv")
-
-
-
-#	df[i] = df['Close'][i]
-#df = df[ticker]
-#df=df.reset_index()
-#df.to_csv("//Users//mkr4014//Desktop//spark_dataset//close_data.csv",index=False)
-#df = pd.read_csv("//Users//mkr4014//Desktop//spark_dataset//close_data.csv")
-#df=df.iloc[1:]
-#df.to_csv("//Users//mkr4014//Desktop//spark_dataset//close_data.csv",index=False)
+print("stock_info File Created")
